@@ -1,0 +1,111 @@
+package dev.giann.pocket_entry
+
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
+import android.os.Bundle
+import android.view.View
+import android.widget.RemoteViews
+import org.json.JSONArray
+
+class QuickEntryWidget : AppWidgetProvider() {
+    override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        ids.forEach { manager.updateAppWidget(it, views(context, it)) }
+    }
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
+        manager.updateAppWidget(id, views(context, id))
+    }
+    override fun onDeleted(context: Context, ids: IntArray) {
+        // No per-widget ledger or wallet state exists to delete.
+    }
+    companion object {
+        const val PREFS = "pocket_native"
+        val slots = intArrayOf(R.id.category_one, R.id.category_two, R.id.category_three, R.id.category_four)
+        val labels=intArrayOf(R.id.category_one_name,R.id.category_two_name,R.id.category_three_name,R.id.category_four_name)
+        val icons=intArrayOf(R.id.category_one_icon,R.id.category_two_icon,R.id.category_three_icon,R.id.category_four_icon)
+        private val lightIcons=mapOf("food" to R.drawable.category_food_light, "travel" to R.drawable.category_travel_light, "bills" to R.drawable.category_bills_light, "shopping" to R.drawable.category_shopping_light, "health" to R.drawable.category_health_light, "fun" to R.drawable.category_fun_light, "home" to R.drawable.category_home_light, "income" to R.drawable.category_income_light, "other" to R.drawable.category_other_light)
+        private val darkIcons=mapOf("food" to R.drawable.category_food_dark, "travel" to R.drawable.category_travel_dark, "bills" to R.drawable.category_bills_dark, "shopping" to R.drawable.category_shopping_dark, "health" to R.drawable.category_health_dark, "fun" to R.drawable.category_fun_dark, "home" to R.drawable.category_home_dark, "income" to R.drawable.category_income_dark, "other" to R.drawable.category_other_dark)
+        fun iconResource(icon:String?, dark:Boolean):Int=(if(dark)darkIcons else lightIcons)[icon] ?: (if(dark)R.drawable.category_other_dark else R.drawable.category_other_light)
+        fun categoryTone(icon: String?): String = when(icon) {
+            "food", "home" -> "plum"
+            "travel" -> "blue"
+            "bills", "shopping" -> "amber"
+            "health", "income" -> "green"
+            "fun" -> "rose"
+            else -> "slate"
+        }
+        fun categoryColor(icon:String?, dark:Boolean):Int = Color.parseColor(when(categoryTone(icon)) {
+            "plum" -> if(dark) "#E9CCE6" else "#5B315D"
+            "blue" -> if(dark) "#BBD7FF" else "#285B8C"
+            "amber" -> if(dark) "#EFCF9C" else "#84551C"
+            "green" -> if(dark) "#ADE2C8" else "#246D53"
+            "rose" -> if(dark) "#FFBAB3" else "#AA3429"
+            "slate" -> if(dark) "#BBB3BD" else "#6A606F"
+            else -> if(dark) "#BBB3BD" else "#6A606F"
+        })
+        fun categoryBackground(icon:String?, dark:Boolean):Int = when(categoryTone(icon)) {
+            "plum" -> if(dark) R.drawable.widget_cell_plum_dark else R.drawable.widget_cell_plum_light
+            "blue" -> if(dark) R.drawable.widget_cell_blue_dark else R.drawable.widget_cell_blue_light
+            "amber" -> if(dark) R.drawable.widget_cell_amber_dark else R.drawable.widget_cell_amber_light
+            "green" -> if(dark) R.drawable.widget_cell_green_dark else R.drawable.widget_cell_green_light
+            "rose" -> if(dark) R.drawable.widget_cell_rose_dark else R.drawable.widget_cell_rose_light
+            "slate" -> if(dark) R.drawable.widget_cell_slate_dark else R.drawable.widget_cell_slate_light
+            else -> if(dark) R.drawable.widget_chip_dark else R.drawable.widget_chip
+        }
+        val defaultCategories = "[{\"id\":\"food\",\"name\":\"Food\",\"icon\":\"food\"},{\"id\":\"travel\",\"name\":\"Travel\",\"icon\":\"travel\"},{\"id\":\"bills\",\"name\":\"Bills\",\"icon\":\"bills\"},{\"id\":\"shopping\",\"name\":\"Shopping\",\"icon\":\"shopping\"}]"
+        fun refresh(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            manager.getAppWidgetIds(ComponentName(context, QuickEntryWidget::class.java)).forEach { manager.updateAppWidget(it, views(context, it)) }
+        }
+        fun pending(context: Context, widgetId: Int, index: Int, category: String?): PendingIntent {
+            val intent = Intent(context, MainActivity::class.java).setAction(QuickEntryPolicy.ACTION)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            if (category != null) intent.data = Uri.Builder().scheme("pocketentry").authority("quick").appendPath(category).appendQueryParameter("widget", widgetId.toString()).build()
+            else intent.data = null
+            return PendingIntent.getActivity(context, widgetId * 8 + index, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        }
+        fun views(context: Context, widgetId: Int): RemoteViews {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val theme = prefs.getString("theme", "system")
+            val systemDark = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            val dark = theme == "dark" || theme == "system" && systemDark
+            val largeType = context.resources.configuration.fontScale > 1.2f
+            val view = RemoteViews(context.packageName, if(largeType) R.layout.quick_entry_widget_large_type else R.layout.quick_entry_widget)
+            view.setViewVisibility(R.id.widget_hint, if(largeType) View.GONE else View.VISIBLE)
+            view.setInt(R.id.widget_root, "setBackgroundResource", if (dark) R.drawable.widget_background_dark else R.drawable.widget_background)
+            view.setTextColor(R.id.widget_title, Color.parseColor(if (dark) "#F7F3F1" else "#27212A"))
+            view.setTextColor(R.id.widget_hint, Color.parseColor(if (dark) "#BBB3BD" else "#6A606F"))
+            view.setOnClickPendingIntent(R.id.widget_header, pending(context, widgetId, 0, null))
+            val categories = try { JSONArray(prefs.getString("categories", defaultCategories)) } catch (_: Exception) { JSONArray(defaultCategories) }
+            slots.forEachIndexed { index, slot ->
+                val c = categories.optJSONObject(index)
+                val id = c?.optString("id")?.takeIf { it.matches(Regex("[a-zA-Z0-9_-]{1,80}")) }
+                if (id == null) view.setViewVisibility(slot, View.GONE)
+                else {
+                    val name = c.optString("name").take(30)
+                    view.setViewVisibility(slot, View.VISIBLE)
+                    view.setTextViewText(labels[index], name)
+                    view.setImageViewResource(icons[index],iconResource(c.optString("icon"),dark))
+                    view.setContentDescription(slot, "Add $name entry")
+                    view.setTextColor(labels[index], categoryColor(c.optString("icon"),dark))
+                    view.setInt(slot, "setBackgroundResource", categoryBackground(c.optString("icon"),dark))
+                    view.setOnClickPendingIntent(slot, pending(context, widgetId, index + 1, id))
+                }
+            }
+            view.setViewVisibility(R.id.category_grid,if(categories.length()>0)View.VISIBLE else View.GONE)
+            view.setViewVisibility(R.id.widget_empty_add,if(categories.length()==0)View.VISIBLE else View.GONE)
+            view.setInt(R.id.widget_empty_add,"setBackgroundResource",if(dark)R.drawable.widget_chip_dark else R.drawable.widget_chip)
+            view.setTextColor(R.id.widget_empty_label,Color.parseColor(if(dark)"#E9CCE6" else "#5B315D"))
+            view.setOnClickPendingIntent(R.id.widget_empty_add,pending(context,widgetId,5,null))
+            view.setViewVisibility(R.id.widget_row_1,if(categories.length()>0)View.VISIBLE else View.GONE)
+            view.setViewVisibility(R.id.widget_row_2,if(categories.length()>2)View.VISIBLE else View.GONE)
+            view.setTextViewText(R.id.widget_hint, if (categories.length() == 0) "Tap to add an entry" else "Tap a category")
+            return view
+        }
+    }
+}

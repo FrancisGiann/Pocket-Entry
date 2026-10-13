@@ -1,0 +1,416 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:flutter/foundation.dart' hide Category;
+import 'package:flutter/services.dart';
+
+import 'data/native_bridge.dart';
+import 'data/storage.dart';
+import 'domain/ledger.dart';
+
+class AppController extends ChangeNotifier {
+  AppController({required this.store, this.bridge, DateTime Function()? clock})
+    : clock = clock ?? DateTime.now;
+  final LedgerStore store;
+  final NativeBridge? bridge;
+  final DateTime Function() clock;
+  Ledger ledger = Ledger.empty();
+  Draft? draft;
+  bool busy = false;
+  String? notice;
+  String? storageError;
+  String? draftError;
+  Future<void> _draftQueue = Future.value();
+  String? _pendingDraft;
+  bool _writingDraft = false;
+  String? feedback;
+  bool feedbackUndo = false;
+  bool entryVisible = false;
+  void publish() => notifyListeners();
+
+  Future<void> initialize() async {
+    final result = await store.load();
+    ledger = result.ledger;
+    notice = result.notice;
+    try {
+      draft = await store.loadDraft();
+      final saved = draft == null ? null : ledger.entry(draft!.id);
+      if (saved != null && !saved.deleted && _draftMatches(saved, draft!)) {
+        draft = null;
+        await store.clearDraft();
+      } else if (draft?.editingId != null && (saved == null || saved.deleted)) {
+        draft = null;
+        await store.clearDraft();
+        notice = 'An unfinished edit is no longer available. Review History.';
+      }
+    } on LedgerException catch (e) {
+      notice = e.message;
+    }
+    await recordAllowances();
+    await _sync();
+    notifyListeners();
+  }
+
+  bool _draftMatches(Entry e, Draft d) {
+    try {
+      return e.centavos == parseMoney(d.amount) &&
+          e.kind == d.kind &&
+          e.date == d.date &&
+          e.note == d.note &&
+          e.categoryId ==
+              (d.kind == EntryKind.transfer ? null : d.categoryId) &&
+          (d.kind != EntryKind.transfer ||
+              e.wallet == d.from && e.toWallet == d.to);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _sync() async {
+    try {
+      await bridge?.sync(ledger);
+    } catch (_) {
+      notice ??= 'Your entry is saved. The home widget could not refresh; reopen the app to retry.';
+    }
+  }
+
+  void startDraft({String? categoryId, Entry? editing}) {
+    if (draft != null && draft!.dirty && editing == null) return;
+    draft = editing == null
+        ? Draft(
+            categoryId: ledger.category(categoryId)?.archived == false
+                ? categoryId
+                : null,
+            date: dayKey(clock()),
+          )
+        : Draft.fromEntry(editing);
+    if (categoryId != null && draft!.categoryId == null) {
+      notice = 'That category changed. Choose an available category.';
+    }
+    updateDraft();
+  }
+
+  void updateDraft() {
+    if (draft == null) return;
+    _pendingDraft = jsonEncode(draft!.toJson());
+    if (_writingDraft) return;
+    _writingDraft = true;
+    _draftQueue = _flushDrafts();
+  }
+
+  Future<void> _flushDrafts() async {
+    // Write promptly, then keep only the newest pending snapshot while the disk
+    // is busy. There is no timer window and save/discard still await the drain.
+    while (_pendingDraft != null) {
+      final snapshot = _pendingDraft!;
+      _pendingDraft = null;
+      try {
+        await store.saveDraft(snapshot);
+        draftError = null;
+      } catch (_) {
+        draftError = 'The unfinished entry could not be stored. Keep this screen open and try saving again.';
+        notifyListeners();
+      }
+    }
+    _writingDraft = false;
+  }
+
+  Future<void> discardDraft() async {
+    await _draftQueue;
+    await store.clearDraft();
+    draft = null;
+    notifyListeners();
+  }
+
+  Future<bool> commit(
+    Ledger Function(Ledger) change, {
+    String? message,
+    bool undo = false,
+  }) async {
+    if (busy) return false;
+    busy = true;
+    storageError = null;
+    notifyListeners();
+    try {
+      final next = change(ledger);
+      await store.save(next);
+      ledger = next;
+      if (message != null) {
+        feedback = message;
+        feedbackUndo = undo;
+      }
+      await _sync();
+      return true;
+    } on LedgerException catch (e) {
+      storageError = e.message;
+      return false;
+    } catch (_) {
+      storageError = 'Could not save to this device. Your previous data is safe. Free some space and try again.';
+      return false;
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveDraft(Wallet wallet) async {
+    if (busy || draft == null) return false;
+    final current = draft!;
+    Entry next;
+    try {
+      final cents = parseMoney(current.amount);
+      if (current.kind != EntryKind.transfer &&
+          (current.categoryId == null ||
+              ledger.category(current.categoryId)?.archived != false)) {
+        throw const LedgerException('Choose a category before saving.');
+      }
+      final now = clock().millisecondsSinceEpoch;
+      final before = current.editingId == null
+          ? null
+          : ledger.entry(current.editingId!);
+      next = Entry(
+        id: current.id,
+        kind: current.kind,
+        centavos: cents,
+        date: current.date,
+        wallet: current.kind == EntryKind.transfer ? current.from : wallet,
+        toWallet: current.kind == EntryKind.transfer ? current.to : null,
+        categoryId: current.kind == EntryKind.transfer
+            ? null
+            : current.categoryId,
+        note: current.note.trim(),
+        createdAt: before?.createdAt ?? now,
+        updatedAt: max(now, before?.updatedAt ?? 0),
+        scheduleId: before?.scheduleId,
+        occurrenceDate: before?.occurrenceDate,
+      );
+    } on LedgerException catch (e) {
+      storageError = e.message;
+      notifyListeners();
+      return false;
+    }
+    // commit marks busy synchronously, so a second tap cannot reach another write.
+    final result = await commit(
+      (l) => l
+          .put(next, editing: current.editingId != null)
+          .copy(preferences: l.preferences.copy(welcomed: true)),
+      message: current.editingId != null
+          ? 'Entry updated'
+          : current.kind == EntryKind.transfer
+          ? '${money(next.centavos)} transfer recorded'
+          : '${money(next.centavos)} ${entryAction(current.kind).toLowerCase()} ${ledger.wallet(wallet)?.label ?? wallet.label}',
+      undo: true,
+    );
+    if (result) {
+      draft = null;
+      await _draftQueue;
+      try {
+        await store.clearDraft();
+      } catch (_) {
+        /* The committed ID prevents a replay after restart. */
+      }
+      if (ledger.preferences.haptics) await HapticFeedback.lightImpact();
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<bool> undo() => commit(
+    (l) => l.undo(clock().millisecondsSinceEpoch),
+    message: 'Change undone',
+  );
+  Future<bool> delete(Entry e) => commit(
+    (l) => l.delete(e.id, clock().millisecondsSinceEpoch),
+    message: 'Entry moved to Recently deleted',
+    undo: true,
+  );
+  Future<bool> restoreDeleted(Entry e) => commit(
+    (l) => l.restoreDeleted(e.id, clock().millisecondsSinceEpoch),
+    message: 'Entry restored',
+    undo: true,
+  );
+  Future<bool> preferences(Preferences value) =>
+      commit((l) => l.copy(preferences: value));
+  Future<bool> setBudget(String month, int cents) => commit(
+    (l) => l.copy(budgets: {...l.budgets, month: cents}),
+    message: 'Monthly budget updated',
+  );
+  Future<bool> setOpening(Wallet wallet, int cents) => commit(
+    (l) => l.copy(openings: {...l.openings, wallet: cents}),
+    message: 'Opening balance updated',
+  );
+
+  Future<bool> setWallet(Wallet value) => commit((l) {
+    Wallet.fromJson(value.toJson());
+    if (value.archived &&
+        l.allowance?.enabled == true &&
+        l.allowance!.wallet == value) {
+      throw const LedgerException(
+        'Move or disable the allowance schedule before archiving this wallet.',
+      );
+    }
+    final wallets = [
+      for (final w in l.wallets)
+        if (w == value) value else w,
+      if (l.wallet(value) == null) value,
+    ];
+    if (wallets.map((w) => w.label.toLowerCase()).toSet().length !=
+        wallets.length) {
+      throw const LedgerException(
+        'Use a distinct wallet name so every choice is clear.',
+      );
+    }
+    if (wallets.length > 20 || !wallets.any((w) => !w.archived)) {
+      throw const LedgerException(
+        'Keep at least one active wallet, up to twenty wallets.',
+      );
+    }
+    var pins = l.preferences.quickWallets
+        .where((id) => wallets.any((w) => w.id == id && !w.archived))
+        .toList();
+    if (pins.isEmpty) pins = [wallets.firstWhere((w) => !w.archived).id];
+    return l.copy(
+      wallets: wallets,
+      openings: {...l.openings, if (l.wallet(value) == null) value: 0},
+      preferences: l.preferences.copy(quickWallets: pins),
+    );
+  }, message: 'Wallet updated');
+
+  Future<bool> pinWallet(Wallet wallet, bool pinned) => commit((l) {
+    final ids = [...l.preferences.quickWallets]..remove(wallet.id);
+    if (pinned) ids.add(wallet.id);
+    if (ids.isEmpty || ids.length > 2) {
+      throw const LedgerException(
+        'Pin one or two active wallets for direct entry.',
+      );
+    }
+    return l.copy(preferences: l.preferences.copy(quickWallets: ids));
+  });
+
+  Future<bool> recordAllowances() async {
+    if (busy) return false;
+    AllowanceCatchUp result;
+    try {
+      result = catchUpAllowance(ledger, clock());
+    } on LedgerException catch (e) {
+      storageError = e.message;
+      notice = 'Allowance was not recorded: ${e.message}';
+      notifyListeners();
+      return false;
+    }
+    if (identical(result.ledger, ledger)) return true;
+    final saved = await commit(
+      (_) => result.ledger,
+      message: result.count > 0
+          ? '${result.count} allowance ${result.count == 1 ? 'entry' : 'entries'} recorded'
+          : null,
+      undo: result.count > 0,
+    );
+    if (saved && result.paused) notice = 'Allowance paused after a gap over 31 days. Review its start date; historical receipts were not assumed.';
+    if (!saved) notice = 'Allowance could not be recorded. Reopen the app to retry; existing records are unchanged.';
+    return saved;
+  }
+
+  Future<bool> setAllowance({
+    required int centavos,
+    required Wallet wallet,
+    required List<int> days,
+    required String startDate,
+    required bool enabled,
+  }) => commit((l) {
+    final today = dayKey(clock());
+    if (startDate.compareTo(today) < 0) {
+      throw const LedgerException(
+        'Start today or later. Add older receipts manually.',
+      );
+    }
+    if (l.wallet(wallet)?.archived != false) {
+      throw const LedgerException('Choose an active wallet.');
+    }
+    final old = l.allowance;
+    // Settle an enabled old rule first. Its replacement takes effect tomorrow.
+    final settled = old?.enabled == true
+        ? catchUpAllowance(l, clock()).ledger
+        : l;
+    final rule = AllowanceSchedule(
+      id: old?.id ?? newId(),
+      centavos: centavos,
+      wallet: wallet,
+      days: days,
+      startDate: startDate,
+      enabled: enabled,
+      processedThrough: old?.enabled == true ? today : previousDay(today),
+    );
+    AllowanceSchedule.fromJson(rule.toJson());
+    return catchUpAllowance(settled.copy(allowance: rule), clock()).ledger;
+  }, message: 'Allowance schedule saved');
+  Future<bool> category(Category value) => commit((l) {
+    final categories = [
+      for (final c in l.categories)
+        if (c.id == value.id) value else c,
+      if (l.category(value.id) == null) value,
+    ];
+    if (!categories.any((c) => !c.archived)) {
+      throw const LedgerException('Keep at least one available category.');
+    }
+    if (categories.length > 100) {
+      throw const LedgerException('You can keep up to 100 categories.');
+    }
+    final ids = l.preferences.widgetCategories
+        .where((id) => categories.any((c) => c.id == id && !c.archived))
+        .toList();
+    return l.copy(
+      categories: categories,
+      preferences: l.preferences.copy(widgetCategories: ids),
+    );
+  }, message: 'Category updated');
+  Future<bool> restore(RestorePreview preview) async {
+    if (busy) return false;
+    if (ledger.encode() != preview.base) {
+      storageError = 'Your ledger changed after the preview. Choose the backup again to review a fresh restore.';
+      notifyListeners();
+      return false;
+    }
+    busy = true;
+    storageError = null;
+    notifyListeners();
+    try {
+      await store.saveRestoreRecovery(ledger);
+      await store.save(preview.ledger);
+      ledger = preview.ledger;
+      feedback =
+          '${preview.added} entries restored · ${preview.skipped} already present';
+      feedbackUndo = false;
+      await _sync();
+      return true;
+    } catch (_) {
+      storageError = 'Restore could not be saved. Your current data is unchanged; try again after freeing space.';
+      return false;
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> recoverBeforeRestore() async {
+    try {
+      final recovery = await store.loadRestoreRecovery();
+      if (recovery == null) {
+        storageError = 'No restore recovery copy is available yet.';
+        notifyListeners();
+        return false;
+      }
+      return await commit((_) => recovery, message: 'Earlier ledger recovered');
+    } catch (_) {
+      storageError = 'The local recovery copy could not be opened. Try your exported backup.';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void clearFeedback() {
+    feedback = null;
+    feedbackUndo = false;
+    notifyListeners();
+  }
+}

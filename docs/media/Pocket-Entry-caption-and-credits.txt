@@ -1,0 +1,9 @@
+Bought it? Log it. I built Pocket Entry around a home-screen category, a simple amount, and a deliberate wallet choice—so recording an expense feels easier to keep up with. Offline, no account; Cash and GCash are manually tracked wallets.
+
+Music: Happy Beats & Business Moves Vol. 10 by Sascha Ende — https://ende.app/en/song/12875-happy-beats-business-moves-vol-10
+Source: ENDE.APP. License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/ (artist terms: https://ende.app/standard-license).
+Edits: excerpted, trimmed, faded, normalized and mixed with sound effects for this video. No endorsement implied.
+Sound accents: Kenney, CC0 — https://kenney.nl/assets/ui-audio, https://kenney.nl/assets/casino-audio and https://kenney.nl/assets/impact-sounds.
+Typography: Inter, SIL Open Font License 1.1; license texts retained in the editable project.
+UI icons: Cupertino Icons, MIT license; license retained in the project.
+Footage: Actual Pocket Entry 0.2.0 synthetic Flutter/Robolectric fixtures, with illustrated taps and amount animation. Fictional Food/Cash expense. Not physical-phone footage or a performance measurement. Cash and GCash are manually tracked wallets; no bank integration or movement of real money.

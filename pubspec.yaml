@@ -1,0 +1,20 @@
+name: pocket_entry
+description: A private offline Cash and GCash ledger with fast explicit wallet entry.
+publish_to: none
+version: 0.2.0+2
+environment:
+  sdk: '>=3.13.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: 1.0.9
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+flutter:
+  uses-material-design: false
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf

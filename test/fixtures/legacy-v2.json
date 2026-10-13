@@ -1,0 +1,87 @@
+{
+  "application": "pocket_entry",
+  "schemaVersion": 2,
+  "currency": "PHP",
+  "categories": [
+    {
+      "id": "food",
+      "name": "Food",
+      "icon": "food",
+      "archived": false
+    }
+  ],
+  "entries": [
+    {
+      "id": "legacy_expense",
+      "kind": "expense",
+      "centavos": 1000,
+      "date": "2026-10-01",
+      "wallet": "cash",
+      "toWallet": null,
+      "categoryId": "food",
+      "note": "Synthetic legacy fixture",
+      "createdAt": 1000,
+      "updatedAt": 1000,
+      "deletedAt": null
+    },
+    {
+      "id": "legacy_income",
+      "kind": "income",
+      "centavos": 8000,
+      "date": "2026-10-01",
+      "wallet": "gcash",
+      "toWallet": null,
+      "categoryId": "food",
+      "note": "Synthetic legacy fixture",
+      "createdAt": 1000,
+      "updatedAt": 1000,
+      "deletedAt": null
+    },
+    {
+      "id": "legacy_transfer",
+      "kind": "transfer",
+      "centavos": 4000,
+      "date": "2026-10-01",
+      "wallet": "cash",
+      "toWallet": "gcash",
+      "categoryId": null,
+      "note": "Synthetic legacy fixture",
+      "createdAt": 1000,
+      "updatedAt": 1000,
+      "deletedAt": null
+    }
+  ],
+  "openings": {
+    "cash": 50000,
+    "gcash": 100000
+  },
+  "budgets": {},
+  "changes": [
+    {
+      "before": null,
+      "after": {
+        "id": "legacy_expense",
+        "kind": "expense",
+        "centavos": 1000,
+        "date": "2026-10-01",
+        "wallet": "cash",
+        "toWallet": null,
+        "categoryId": "food",
+        "note": "Synthetic legacy fixture",
+        "createdAt": 1000,
+        "updatedAt": 1000,
+        "deletedAt": null
+      }
+    }
+  ],
+  "preferences": {
+    "welcomed": true,
+    "theme": "light",
+    "reduceMotion": false,
+    "haptics": false,
+    "privatePreview": true,
+    "widgetCategories": [
+      "food"
+    ]
+  }
+}
