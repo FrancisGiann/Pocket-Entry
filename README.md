@@ -1,16 +1,18 @@
 # Pocket Entry
 
+> This repository is now **Ponpon — Budget & Expenses**. The published 0.2.0 app and video still carry Pocket Entry branding while the renamed app and media are being prepared.
+
 **One entry at a time.** An offline Android ledger for quick, deliberate expense recording. Version **0.2.0** · Flutter · Android 8.0 / API 26+
 
 Choose a category, enter an amount, and explicitly choose the wallet. Cash, GCash, and custom wallets are manually tracked; Pocket Entry has no bank connection and never moves real money. A new installation starts empty.
 
 ## Watch the ad
 
-<a href="https://raw.githubusercontent.com/FrancisGiann/Pocket-Entry/main/docs/media/Pocket-Entry-one-entry-at-a-time.mp4">
+<a href="https://raw.githubusercontent.com/FrancisGiann/Ponpon/main/docs/media/Pocket-Entry-one-entry-at-a-time.mp4">
   <img src="docs/media/Pocket-Entry-one-entry-at-a-time-cover.jpg" alt="Pocket Entry — One entry at a time. Download the final 20.5-second ad." width="280">
 </a>
 
-[Download the ad (MP4)](https://raw.githubusercontent.com/FrancisGiann/Pocket-Entry/main/docs/media/Pocket-Entry-one-entry-at-a-time.mp4) · [View file on GitHub](docs/media/Pocket-Entry-one-entry-at-a-time.mp4) · [Caption and credits](docs/media/Pocket-Entry-caption-and-credits.txt)
+[Download the ad (MP4)](https://raw.githubusercontent.com/FrancisGiann/Ponpon/main/docs/media/Pocket-Entry-one-entry-at-a-time.mp4) · [View file on GitHub](docs/media/Pocket-Entry-one-entry-at-a-time.mp4) · [Caption and credits](docs/media/Pocket-Entry-caption-and-credits.txt)
 
 The ad uses synthetic Flutter/Robolectric fixtures and illustrative animation from version 0.2.0. It is not physical-device footage or a performance measurement. Music: [Happy Beats & Business Moves Vol. 10](https://ende.app/en/song/12875-happy-beats-business-moves-vol-10) by Sascha Ende, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), excerpted, trimmed, faded, normalized and mixed for the ad. Full music, sound, font, and icon credits are linked above.
 
@@ -27,8 +29,8 @@ The ad uses synthetic Flutter/Robolectric fixtures and illustrative animation fr
 Use Flutter **3.47.2** / Dart **3.13.2**, an Android SDK with platform 36, and JDK 21. The project uses AGP 9.1.0 and Gradle 9.3.1. Install Flutter and Android tooling, accept the Android SDK licenses, and check `flutter doctor` before building.
 
 ```sh
-git clone https://github.com/FrancisGiann/Pocket-Entry.git
-cd Pocket-Entry
+git clone https://github.com/FrancisGiann/Ponpon.git
+cd Ponpon
 flutter pub get
 flutter analyze
 flutter test --concurrency=1
