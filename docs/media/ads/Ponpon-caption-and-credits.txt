@@ -1,0 +1,22 @@
+A little lunch. A little record. Log the purchase while it is fresh, then go enjoy your day.
+
+Ponpon — Budget & Expenses. Download for Android. Offline. No account.
+
+Music: “Happy Beats & Business Moves Vol. 12” by Sascha Ende.
+Source: https://ende.app/en/song/12881-happy-beats-business-moves-vol-12
+License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+License URL: https://creativecommons.org/licenses/by/4.0/
+Artist terms: https://ende.app/standard-license
+Edits: 21.5-second excerpt, fades, gain adjustment, loudness normalization and cup/receipt/key/footstep accents.
+No endorsement by the artist is implied.
+
+Sound effects: Kenney, CC0 — UI Audio, Casino Audio and Impact Sounds.
+Sources: https://kenney.nl/assets/ui-audio ; https://kenney.nl/assets/casino-audio ; https://kenney.nl/assets/impact-sounds
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Edits: excerpt, timing and gain adjustments.
+
+Footage: Original illustrated purchase scene over actual Ponpon 0.2.2 synthetic Home/amount/history fixtures and verified wallet icon supplied by the app worker for the current branding. Source-based amount states, illustrated taps and editorial cuts. Not physical-device or measured-speed footage. Cash/GCash are manually recorded wallets, with no bank connection or real-money movement.
+Visual artwork: original vector/CSS props created for this film; actual captures/icon supplied by the verified app project.
+Fonts: Inter, SIL Open Font License; notices retained.
+Runtime: GSAP Standard License, retained notice; Hyperframes 0.8.150; installed Brag 0.4.0.
+Audio review: objective final-stream loudness, peaks, silence and full decode verified. Subjective audition unavailable; no listening claim.

@@ -1,20 +1,24 @@
-# Pocket Entry
+# Ponpon — Budget & Expenses
 
-> This repository is now **Ponpon — Budget & Expenses**. The published 0.2.0 app and video still carry Pocket Entry branding while the renamed app and media are being prepared.
+> Previously Pocket Entry. The source currently published here is version **0.2.0** and retains Pocket Entry branding. The ad below previews Ponpon 0.2.2 using synthetic records and the verified wallet icon.
 
 **One entry at a time.** An offline Android ledger for quick, deliberate expense recording. Version **0.2.0** · Flutter · Android 8.0 / API 26+
 
-Choose a category, enter an amount, and explicitly choose the wallet. Cash, GCash, and custom wallets are manually tracked; Pocket Entry has no bank connection and never moves real money. A new installation starts empty.
+Choose a category, enter an amount, and explicitly choose the wallet. Cash, GCash, and custom wallets are manually tracked; Ponpon has no bank connection and never moves real money. A new installation starts empty.
 
 ## Watch the ad
 
-<a href="https://raw.githubusercontent.com/FrancisGiann/Ponpon/main/docs/media/Pocket-Entry-one-entry-at-a-time.mp4">
-  <img src="docs/media/Pocket-Entry-one-entry-at-a-time-cover.jpg" alt="Pocket Entry — One entry at a time. Download the final 20.5-second ad." width="280">
+**Before you walk away** · 21.5 seconds
+
+<a href="https://raw.githubusercontent.com/FrancisGiann/Ponpon/main/docs/media/ads/Ponpon-before-you-walk-away.mp4">
+  <img src="docs/media/ads/Ponpon-before-you-walk-away-cover.jpg" alt="Ponpon — Before you walk away. Open the 21.5-second ad (MP4)." width="280">
 </a>
 
-[Download the ad (MP4)](https://raw.githubusercontent.com/FrancisGiann/Ponpon/main/docs/media/Pocket-Entry-one-entry-at-a-time.mp4) · [View file on GitHub](docs/media/Pocket-Entry-one-entry-at-a-time.mp4) · [Caption and credits](docs/media/Pocket-Entry-caption-and-credits.txt)
+[Watch or download the ad (MP4)](https://raw.githubusercontent.com/FrancisGiann/Ponpon/main/docs/media/ads/Ponpon-before-you-walk-away.mp4) · [View file on GitHub](docs/media/ads/Ponpon-before-you-walk-away.mp4) · [Caption and credits](docs/media/ads/Ponpon-caption-and-credits.txt)
 
-The ad uses synthetic Flutter/Robolectric fixtures and illustrative animation from version 0.2.0. It is not physical-device footage or a performance measurement. Music: [Happy Beats & Business Moves Vol. 10](https://ende.app/en/song/12875-happy-beats-business-moves-vol-10) by Sascha Ende, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), excerpted, trimmed, faded, normalized and mixed for the ad. Full music, sound, font, and icon credits are linked above.
+An illustrated purchase scene uses Ponpon 0.2.2 screens with synthetic records and the verified wallet icon. Cash and GCash are manually recorded wallets. This is staged product footage.
+
+Music: [Happy Beats & Business Moves Vol. 12](https://ende.app/en/song/12881-happy-beats-business-moves-vol-12) by Sascha Ende, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Excerpted, faded, gain adjusted, normalized and mixed with sound accents. Full credits are linked above.
 
 ## Included
 
